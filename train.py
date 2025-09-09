@@ -392,7 +392,8 @@ def main(args):
         gradient_clip_val=args.max_grad_norm,
         accumulate_grad_batches=args.gradient_accumulation_steps,
         log_every_n_steps=10,
-        val_check_interval=args.steps_per_eval,
+        # val_check_interval=args.steps_per_eval,
+        val_check_interval=500,
         logger=pl.loggers.WandbLogger(
             name="logs", save_dir=args.output_dir, version=""
         ),
@@ -421,7 +422,7 @@ if __name__ == "__main__":
         "--vocab_size", type=int, default=14986, help="Dataset vocabulary size"
     )
     parser.add_argument(
-        "--seq_len", type=int, default=512, help="Dataset sequence length"
+        "--seq_len", type=int, default=365, help="Dataset sequence length"
     )
 
     # Model parameters
@@ -447,10 +448,10 @@ if __name__ == "__main__":
         "--num_train_steps", type=int, default=50000, help="Number of training steps"
     )
     parser.add_argument(
-        "--learning_rate", type=float, default=5e-6, help="Learning rate"
+        "--learning_rate", type=float, default=1e-4, help="Learning rate"
     )
     parser.add_argument(
-        "--train_batch_size", type=int, default=32, help="Batch size for training"
+        "--train_batch_size", type=int, default=128, help="Batch size for training"
     )
     parser.add_argument(
         "--eval_batch_size", type=int, default=16, help="Batch size for evaluation"
@@ -487,7 +488,7 @@ if __name__ == "__main__":
     # System parameters
     parser.add_argument("--num_nodes", type=int, default=1, help="Number of nodes")
     parser.add_argument(
-        "--gpus_per_node", type=int, default=1, help="Number of GPUs per node"
+        "--gpus_per_node", type=int, default=4, help="Number of GPUs per node"
     )
 
     args = parser.parse_args()

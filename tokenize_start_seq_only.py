@@ -10,7 +10,7 @@ import pickle
 It is only for the case when we only use the first input_length days of the access data.
 It is copied from a jupyter notebook. Please set the paths accordingly when using."""
 
-ds_path = "/share/dean/arxiv-data/cumulative_cnts_with_metadata_citation_offset_v4/train_day5_access_dropped_filtered_shorter_than_5_years_tokenized"
+ds_path = "/share/dean/arxiv-data/cumulative_cnts_with_metadata_citation_offset_v4/val_day5_access_dropped_filtered_shorter_than_5_years_tokenized"
 ds = load_from_disk(ds_path)
 ds.save_to_disk("/share/dean/tmp/ds_copy")
 ds_copy = load_from_disk("/share/dean/tmp/ds_copy")
@@ -55,16 +55,16 @@ for row in tqdm(ds_filter):
     access_input_str.append(row["access_inputs"])
     citation_output_str.append(row["citation_outputs"])
 
-    citation_input_str = "\n".join(citation_input_str)
-    access_input_str = "\n".join(access_input_str)
-    citation_output_str = "\n".join(citation_output_str)
+citation_input_str = "\n".join(citation_input_str)
+access_input_str = "\n".join(access_input_str)
+citation_output_str = "\n".join(citation_output_str)
 
 
 save_root = "/share/dean/arxiv-data/tokenized_strings_start_only_365_v4"
 os.makedirs(save_root, exist_ok=True)
-with open(os.path.join(save_root, "citation_input_train.txt"), "w") as f:
+with open(os.path.join(save_root, "citation_input_val.txt"), "w") as f:
     f.write(citation_input_str)
-with open(os.path.join(save_root, "citation_target_train.txt"), "w") as f:
+with open(os.path.join(save_root, "citation_target_val.txt"), "w") as f:
     f.write(citation_output_str)
-with open(os.path.join(save_root, "access_input_train.txt"), "w") as f:
+with open(os.path.join(save_root, "access_input_val.txt"), "w") as f:
     f.write(access_input_str)

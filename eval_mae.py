@@ -37,9 +37,6 @@ def evaluate(model, dataset, device, batch_size=32):
             preds = outputs.logits[:, 1, :6378].argmax(
                 dim=-1
             )  # TODO: check how often you need it
-            # print(preds[0, :])
-            # print(batch["labels"].shape)
-            # print(batch["labels"][0, :])
             labels = batch["labels"][:, 1]
 
             all_preds.append(preds.cpu())
@@ -82,24 +79,6 @@ def evaluate_mae(args, preds=None, labels=None, relative=0):
 
         # Return mean of relative errors
         return torch.mean(relative_errors)
-
-    # mask = labels > 5
-
-    # # Calculate absolute errors
-    # abs_errors = torch.abs(preds - labels)
-
-    # # For labels > 5, calculate relative errors (abs_error / true_label)
-    # # Only compute for the masked values
-    # if torch.any(mask):
-    #     filtered_abs_errors = abs_errors[mask]
-    #     filtered_labels = labels[mask]
-    #     relative_errors = filtered_abs_errors / filtered_labels
-
-    #     # Return mean of relative errors
-    #     return torch.mean(relative_errors)
-    # else:
-    #     # If no labels > 5, return 0 or some default value
-    #     return torch.tensor(0.0, device=preds.device)
 
 
 if __name__ == "__main__":
