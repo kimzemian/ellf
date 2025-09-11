@@ -12,6 +12,7 @@ import math
 import wandb
 import argparse
 from torch.utils.data import Sampler, WeightedRandomSampler
+from transformers import get_scheduler
 import numpy as np
 import sys
 
@@ -79,6 +80,11 @@ def get_argparser():
     parser.add_argument("--batch_size", type=int, default=128, help="Batch size")
     parser.add_argument("--ablation", default=False, action="store_true")
     parser.add_argument("--ablation_name", default="accesses", type=str)
+    parser.add_argument("--optimizer", default="adamw", type=str)
+    parser.add_argument("--scheduler", default="linear", type=str)
+    parser.add_argument("--weight_decay", default=0.01, type=float)
+    parser.add_argument("--num_cycles", default=None)
+    parser.add_argument("--power", default=None)
     return parser
 
 
@@ -196,6 +202,22 @@ def get_dataloaders(
     return train_loader, val_loader, test_loader
 
 
+def get_optimizer(args, model):
+    if args.optimizer == "adamw":
+        optimizer = torch.optim.AdamW(
+            model.parameters(), lr=args.lr, weight_decay=args.weight_decay
+        )
+    elif args.optimizer == "adam":
+        optimizer = torch.optim.Adam(
+            model.parameters(), lr=args.lr, weight_decay=args.weight_decay
+        )
+    elif args.optimizer == "sgd":
+        optimizer = torch.optim.SGD(
+            model.parameters(), lr=args.lr, weight_decay=args.weight_decay
+        )
+    return optimizer
+
+
 def main(args):
     if args.ablation:
         args.input_size = args.input_horizon
@@ -218,34 +240,39 @@ def main(args):
     model = get_model(args).cuda()
 
     # Hyperparameters
-    lr = args.lr
     epochs = args.epochs
     warmup_epochs = args.warmup_epochs
 
-    exp_tag = f"test_linear_norm_balanced_gelu_noact_model_{args.model_name}_layer_{args.num_layers}_lr_{args.lr}_ep_{args.epochs}_bs_{args.batch_size}_hs_{args.hidden_size}_horizon_{args.input_horizon}_ablation_{args.ablation}_{args.ablation_name}"
+    exp_tag = f"sweep_linear_norm_balanced_gelu_noact_model_{args.model_name}_layer_{args.num_layers}_lr_{args.lr}_ep_{args.epochs}_bs_{args.batch_size}_hs_{args.hidden_size}_horizon_{args.input_horizon}_weight_decay_{args.weight_decay}_optimizer_{args.optimizer}_warmup_epochs_{args.warmup_epochs}_scheduler_{args.scheduler}_num_cyles_{args.num_cycles}_power_{args.power}_ablation_{args.ablation}_{args.ablation_name}"
     output_dir = osp.join("outputs", exp_tag)
     os.makedirs(output_dir, exist_ok=True)
 
     # Initialize model, loss, optimizer
     criterion = nn.MSELoss()
-    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-5)
+    optimizer = get_optimizer(args, model)
 
     total_steps = len(train_loader) * epochs
     warmup_steps = len(train_loader) * warmup_epochs
 
-    # Scheduler with linear warmup and cosine decay
-    def lr_lambda(current_step):
-        if current_step < warmup_steps:
-            return float(current_step) / float(max(1, warmup_steps))
-        progress = float(current_step - warmup_steps) / float(
-            max(1, total_steps - warmup_steps)
-        )
-        return 0.5 * (1.0 + math.cos(math.pi * progress))
+    scheduler_kwargs = dict(
+        name=args.scheduler,
+        optimizer=optimizer,
+        num_warmup_steps=warmup_steps,
+        num_training_steps=total_steps,
+        scheduler_specific_kwargs={},  # start empty
+    )
 
-    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
+    if args.scheduler == "cosine_with_restarts":
+        scheduler_kwargs["scheduler_specific_kwargs"]["num_cycles"] = int(
+            args.num_cycles
+        )
+    elif args.scheduler == "polynomial":
+        scheduler_kwargs["scheduler_specific_kwargs"]["power"] = float(args.power)
+
+    scheduler = get_scheduler(**scheduler_kwargs)
 
     # Training loop
-    wandb.init(project="eslop", name=exp_tag, config=vars(args))
+    wandb.init(project="sweep", name=exp_tag, config=vars(args))
     step = 0
     for epoch in range(epochs):
         model.train()
@@ -255,7 +282,7 @@ def main(args):
             batch_X = batch_X.cuda()
             batch_y = batch_y.cuda()
             optimizer.zero_grad()
-            outputs = model(batch_X)
+            outputs = model(batch_X).squeeze(-1)
             loss = criterion(outputs, batch_y)
             loss.backward()
             optimizer.step()
