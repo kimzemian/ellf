@@ -1,5 +1,5 @@
-Models used to benchmark forecasting methods for time-series Lead-Lag dynamics in social platforms.
+Models used to benchmark forecasting methods on social time-series dataset for Lead-Lag dynamics.
 
 partial repo, Time-MoE foundation model benchmarks are in another repository.
 
-will consolidate if time allows!
+will consolidate if time allows and add documentation if time permits!
