@@ -488,7 +488,7 @@ if __name__ == "__main__":
     # System parameters
     parser.add_argument("--num_nodes", type=int, default=1, help="Number of nodes")
     parser.add_argument(
-        "--gpus_per_node", type=int, default=4, help="Number of GPUs per node"
+        "--gpus_per_node", type=int, default=1, help="Number of GPUs per node"
     )
 
     args = parser.parse_args()

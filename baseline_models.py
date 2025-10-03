@@ -106,7 +106,5 @@ class TransformerModel(nn.Module):
         seq_len = x.size(1)
         x = x + self.positional_embedding[:, :seq_len, :]  # inject position
         x = self.transformer(x)
-        # pooled = self.pool(x.transpose(1, 2)).squeeze(-1)
-        # TODO: read claude's thoughts
-        pooled = x[:, -1, :]
+        pooled = self.pool(x.transpose(1, 2)).squeeze(-1)
         return self.fc(pooled)
